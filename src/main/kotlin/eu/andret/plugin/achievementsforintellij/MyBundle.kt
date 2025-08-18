@@ -1,4 +1,4 @@
-package com.github.andret2344.achievementsforintellij
+package eu.andret.plugin.achievementsforintellij
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.NonNls

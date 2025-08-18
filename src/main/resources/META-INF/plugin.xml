@@ -1,15 +1,24 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.andret2344.achievementsforintellij</id>
-    <name>achievements-for-intellij</name>
-    <vendor>andret2344</vendor>
+    <id>eu.andret.plugin.achievementsforintellij</id>
+    <name>Achievements</name>
+    <vendor>Andret2344</vendor>
 
     <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.andret2344.achievementsforintellij.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.andret2344.achievementsforintellij.startup.MyProjectActivity" />
+        <toolWindow factoryClass="eu.andret.plugin.achievementsforintellij.toolWindow.MyToolWindowFactory"
+                    id="MyToolWindow"/>
+        <postStartupActivity implementation="eu.andret.plugin.achievementsforintellij.startup.MyProjectActivity"/>
     </extensions>
+    <actions resource-bundle="messages.ActionsBundle">
+        <action
+                id="eu.andret.plugin.achievementsforintellij.action.EasterEggAction"
+                class="eu.andret.plugin.achievementsforintellij.action.EasterEggAction"
+        >
+            <add-to-group group-id="CodeMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>

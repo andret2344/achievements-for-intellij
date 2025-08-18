@@ -1,4 +1,4 @@
-package com.github.andret2344.achievementsforintellij.toolWindow
+package eu.andret.plugin.achievementsforintellij.toolWindow
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -8,8 +8,8 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
-import com.github.andret2344.achievementsforintellij.MyBundle
-import com.github.andret2344.achievementsforintellij.services.MyProjectService
+import eu.andret.plugin.achievementsforintellij.MyBundle
+import eu.andret.plugin.achievementsforintellij.services.MyProjectService
 import javax.swing.JButton
 
 

@@ -1,9 +1,9 @@
-package com.github.andret2344.achievementsforintellij.services
+package eu.andret.plugin.achievementsforintellij.services
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
-import com.github.andret2344.achievementsforintellij.MyBundle
+import eu.andret.plugin.achievementsforintellij.MyBundle
 
 @Service(Service.Level.PROJECT)
 class MyProjectService(project: Project) {

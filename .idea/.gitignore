@@ -1,0 +1,9 @@
+/libraries/
+/modules/
+
+/CIAidSettingsState.xml
+/compiler.xml
+/kotlinc.xml
+/misc.xml
+/modules.xml
+/workspace.xml
