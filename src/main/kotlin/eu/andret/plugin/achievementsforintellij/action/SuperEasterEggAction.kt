@@ -8,15 +8,16 @@ import eu.andret.plugin.achievementsforintellij.MyBundle
 import eu.andret.plugin.achievementsforintellij.achievements.AchievementIds
 import eu.andret.plugin.achievementsforintellij.storage.AchievementsService
 
-internal class EasterEggAction : DumbAwareAction() {
+internal class SuperEasterEggAction : DumbAwareAction() {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun actionPerformed(e: AnActionEvent) {
-        AchievementsService.getInstance().increment(AchievementIds.EASTER_EGG)
+        // Grant the Super Easter Egg achievement
+        AchievementsService.getInstance().increment(AchievementIds.SUPER_EASTER_EGG)
 
         Messages.showDialog(
-            MyBundle.message("achievement.easter-egg.modal.content"),
-            MyBundle.message("achievement.easter-egg.modal.title"),
+            MyBundle.message("achievement.super-easter-egg.modal.content"),
+            MyBundle.message("achievement.super-easter-egg.modal.title"),
             arrayOf(MyBundle.message("ok")),
             1,
             null

@@ -9,16 +9,42 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="eu.andret.plugin.achievementsforintellij.toolWindow.MyToolWindowFactory"
-                    id="MyToolWindow"/>
-        <postStartupActivity implementation="eu.andret.plugin.achievementsforintellij.startup.MyProjectActivity"/>
+        <notificationGroup id="achievements.notifications" displayType="BALLOON" isLogByDefault="true"/>
     </extensions>
-    <actions resource-bundle="messages.ActionsBundle">
+
+    <projectListeners>
+        <listener
+                class="eu.andret.plugin.achievementsforintellij.listeners.LongFileOpenListener"
+                topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <listener
+                class="eu.andret.plugin.achievementsforintellij.listeners.CodeNecromancerListener"
+                topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <listener
+                class="eu.andret.plugin.achievementsforintellij.listeners.TabsOpenListener"
+                topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+    </projectListeners>
+
+    <applicationListeners>
+        <listener
+                class="eu.andret.plugin.achievementsforintellij.listeners.TabsBulkCloseListener"
+                topic="com.intellij.openapi.actionSystem.ex.AnActionListener"/>
+    </applicationListeners>
+
+    <actions resource-bundle="messages.MyBundle">
         <action
                 id="eu.andret.plugin.achievementsforintellij.action.EasterEggAction"
-                class="eu.andret.plugin.achievementsforintellij.action.EasterEggAction"
-        >
+                class="eu.andret.plugin.achievementsforintellij.action.EasterEggAction">
             <add-to-group group-id="CodeMenu" anchor="last"/>
+        </action>
+
+        <action
+                id="eu.andret.plugin.achievementsforintellij.action.SuperEasterEggAction"
+                class="eu.andret.plugin.achievementsforintellij.action.SuperEasterEggAction"/>
+
+        <action
+                id="eu.andret.plugin.achievementsforintellij.action.ShowAchievementsAction"
+                class="eu.andret.plugin.achievementsforintellij.action.ShowAchievementsAction">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>
 </idea-plugin>
