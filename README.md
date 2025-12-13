@@ -1,8 +1,8 @@
 # Achievements for IntelliJ
 
 ![Build](https://github.com/Andret2344/achievements-for-intellij/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/10294-intelliachievements.svg)](https://plugins.jetbrains.com/plugin/10294-intelliachievements)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/10294-intelliachievements.svg)](https://plugins.jetbrains.com/plugin/10294-intelliachievements)
+[![Version](https://img.shields.io/jetbrains/plugin/v/29357-achievements.svg)](https://plugins.jetbrains.com/plugin/29357-achievements)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/29357-achievements.svg)](https://plugins.jetbrains.com/plugin/29357-achievements)
 
 ## Description
 
