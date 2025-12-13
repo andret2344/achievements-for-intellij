@@ -9,7 +9,19 @@
 <!-- Plugin description -->
 This Achievements IntelliJ Platform Plugin adds some fun when coding.
 
-It allows one to get and check achievements for writing and running Java programs, or using your the IDE's UI.
+It allows one to get and check achievements for writing and running Java programs, or using your IDE's UI.
+
+Current Achievements:
+
+| Name                 | Description                                           |
+|----------------------|-------------------------------------------------------|
+| **Code Necromancer** | Open a file that hasn't been changed in over 2 years. |
+| **Millenium File**   | Open a file with 1,000 or more lines.                 |
+| **Tab Avalanche**    | Have 10, 25, 50 or 100 tabs opened simultaneously.    |
+| **Clean Sweep**      | Close 10, 25, 50 or 100 tabs with a single click.     |
+| **Easter Egg**       | Find the Easter Egg.                                  |
+| **Super Easter Egg** | Find the Super Easter Egg.                            |
+
 <!-- Plugin description end -->
 
 ## Installation
