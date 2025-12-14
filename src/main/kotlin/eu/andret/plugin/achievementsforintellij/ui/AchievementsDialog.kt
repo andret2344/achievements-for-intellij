@@ -25,6 +25,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.JSeparator
+import javax.swing.plaf.basic.BasicProgressBarUI
 
 internal class AchievementsDialog(project: Project?) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
 
@@ -43,9 +44,9 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
     }
 
     companion object {
-        private val COLOR_GREEN = JBColor(Color(34, 139, 34), Color(76, 175, 80))
-        private val COLOR_ORANGE = JBColor(Color(255, 140, 0), Color(255, 165, 0))
-        private val COLOR_RED = JBColor(Color(178, 34, 34), Color(244, 67, 54))
+        private val COLOR_GREEN = JBColor(Color(0, 128, 0), Color(76, 175, 80))
+        private val COLOR_ORANGE = JBColor(Color(204, 102, 0), Color(255, 165, 0))
+        private val COLOR_RED = JBColor(Color(204, 0, 0), Color(244, 67, 54))
     }
 
     override fun createActions(): Array<Action> {
@@ -66,14 +67,33 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
     }
 
     override fun createCenterPanel(): JComponent {
+        val mainPanel = JPanel(BorderLayout()).apply {
+            border = JBUI.Borders.empty()
+        }
+
+        // Add overall progress bar at the top
+        mainPanel.add(createOverallProgressPanel(), BorderLayout.NORTH)
+
+        // Add scrollable achievements list
         scrollPane = JBScrollPane(createAchievementsListPanel()).apply {
             border = JBUI.Borders.empty()
         }
-        return scrollPane
+        mainPanel.add(scrollPane, BorderLayout.CENTER)
+
+        return mainPanel
     }
 
     private fun refreshContent() {
+        val mainPanel = JPanel(BorderLayout()).apply {
+            border = JBUI.Borders.empty()
+        }
+        mainPanel.add(createOverallProgressPanel(), BorderLayout.NORTH)
         scrollPane.setViewportView(createAchievementsListPanel())
+        mainPanel.add(scrollPane, BorderLayout.CENTER)
+        contentPane.removeAll()
+        (contentPane as JPanel).add(mainPanel, BorderLayout.CENTER)
+        contentPane.revalidate()
+        contentPane.repaint()
     }
 
     private fun createAchievementsListPanel() = JPanel().apply {
@@ -97,7 +117,19 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         return JPanel().apply {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
             border = JBUI.Borders.empty(8)
-            add(createNameLabel(def, progress))
+
+            // Add name with optional hidden badge
+            val namePanel = JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.X_AXIS)
+                alignmentX = Component.LEFT_ALIGNMENT
+                add(createNameLabel(def, progress))
+                if (def.hidden) {
+                    add(Box.createHorizontalStrut(8))
+                    add(createHiddenBadge())
+                }
+            }
+            add(namePanel)
+
             add(Box.createVerticalStrut(4))
             add(createDescriptionLabel(def, progress))
             add(Box.createVerticalStrut(8))
@@ -110,11 +142,27 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         }.let { wrapWithSeparator(it) }
     }
 
-    private fun createNameLabel(def: AchievementDefinition, progress: AchievementProgress) = JLabel(
-        if (def.hidden && progress.lastStepIndex < 0) hiddenNameMessage else MyBundle.message(def.nameKey)
-    ).apply {
-        font = font.deriveFont(Font.BOLD)
-        alignmentX = Component.LEFT_ALIGNMENT
+    private fun createNameLabel(def: AchievementDefinition, progress: AchievementProgress): JLabel {
+        val text = if (def.hidden && progress.lastStepIndex < 0) {
+            hiddenNameMessage
+        } else {
+            MyBundle.message(def.nameKey)
+        }
+
+        return JLabel(text).apply {
+            font = font.deriveFont(Font.BOLD)
+            alignmentX = Component.LEFT_ALIGNMENT
+        }
+    }
+
+    private fun createHiddenBadge(): JLabel {
+        return JLabel("SECRET").apply {
+            font = font.deriveFont(Font.BOLD, font.size.toFloat() - 2)
+            foreground = JBColor(Color.WHITE, Color.BLACK)
+            isOpaque = true
+            background = JBColor(Color(153, 102, 204), Color(153, 102, 204))
+            border = JBUI.Borders.empty(2, 6)
+        }
     }
 
     private fun createDescriptionLabel(def: AchievementDefinition, progress: AchievementProgress) = JLabel(
@@ -166,5 +214,65 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         alignmentX = Component.LEFT_ALIGNMENT
         add(itemPanel, BorderLayout.CENTER)
         add(JSeparator(), BorderLayout.SOUTH)
+    }
+
+    private fun createOverallProgressPanel(): JPanel {
+        val percentage = calculateOverallProgress()
+
+        return JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            border = JBUI.Borders.empty(12, 12, 8, 12)
+
+            add(JLabel(MyBundle.message("progress.overall.title")).apply {
+                font = font.deriveFont(Font.BOLD, font.size.toFloat() + 2)
+                alignmentX = Component.LEFT_ALIGNMENT
+            })
+
+            add(Box.createVerticalStrut(6))
+
+            add(object : JProgressBar(0, 100) {
+                init {
+                    alignmentX = LEFT_ALIGNMENT
+                    maximumSize = java.awt.Dimension(Integer.MAX_VALUE, preferredSize.height)
+                    value = percentage
+                    isStringPainted = true
+                    string = "$percentage%"
+                    foreground = JBColor(Color(51, 122, 183), Color(255, 165, 0))
+                }
+
+                override fun updateUI() {
+                    super.updateUI()
+                    // selectionForeground = text color on filled portion (always white)
+                    // selectionBackground = text color on unfilled portion (black in light, white in dark)
+                    setUI(object : BasicProgressBarUI() {
+                        override fun getSelectionForeground() = JBColor.WHITE
+                        override fun getSelectionBackground() = JBColor(Color.BLACK, Color.WHITE)
+                    })
+                }
+            })
+
+            add(Box.createVerticalStrut(8))
+            add(JSeparator())
+        }
+    }
+
+    private fun calculateOverallProgress(): Int {
+        val achievements = AchievementsRegistry.all()
+        if (achievements.isEmpty()) return 0
+
+        var totalPercentage = 0.0
+
+        achievements.forEach { achievement ->
+            val progress = service.getProgress(achievement.id)
+            val achievementSteps = achievement.steps.size.coerceAtLeast(1)
+            val completedSteps = (progress.lastStepIndex + 1).coerceIn(0, achievementSteps)
+
+            // Each achievement contributes equally (100 / number of achievements)
+            // Within each achievement, steps are weighted equally
+            val achievementProgress = (completedSteps.toDouble() / achievementSteps.toDouble()) * 100.0
+            totalPercentage += achievementProgress
+        }
+
+        return (totalPercentage / achievements.size).toInt()
     }
 }
