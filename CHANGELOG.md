@@ -16,6 +16,11 @@ QOL improvements.
 - A general progress bar to show the progress of achievements.
 - Fixed the UI on light-based themes.
 - Added a "SECRET" to see which achievements are and were hidden.
+- A "File Voyager" achievement for opening different file types.
+
+### Changed
+
+- Improved the UI of the achievements' progress bars.
 
 ## Release 0.1.0
 

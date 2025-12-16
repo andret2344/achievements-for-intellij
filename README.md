@@ -33,7 +33,7 @@ Current Achievements:
 
 - Using JetBrains Marketplace:
 
-  Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/10294-intelliachievements) and install it by
+  Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/29357-achievements) and install it by
   clicking the <kbd>Install to ...</kbd> button in case your IDE is running.
 
   You can also download the [latest release](https://plugins.jetbrains.com/plugin/10294-intelliachievements/versions)

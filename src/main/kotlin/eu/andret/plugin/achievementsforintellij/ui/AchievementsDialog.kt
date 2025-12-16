@@ -14,6 +14,7 @@ import eu.andret.plugin.achievementsforintellij.storage.AchievementsService.Achi
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
+import java.awt.Dimension
 import java.awt.Font
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
@@ -23,9 +24,7 @@ import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.JProgressBar
 import javax.swing.JSeparator
-import javax.swing.plaf.basic.BasicProgressBarUI
 
 internal class AchievementsDialog(project: Project?) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
 
@@ -45,8 +44,9 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
 
     companion object {
         private val COLOR_GREEN = JBColor(Color(0, 128, 0), Color(76, 175, 80))
-        private val COLOR_ORANGE = JBColor(Color(204, 102, 0), Color(255, 165, 0))
+        private val COLOR_ORANGE = JBColor(Color(204, 102, 0), Color(255, 200, 87))
         private val COLOR_RED = JBColor(Color(204, 0, 0), Color(244, 67, 54))
+        private val PROGRESS_BAR_COLOR = JBColor(Color(51, 122, 183), Color(255, 165, 0))
     }
 
     override fun createActions(): Array<Action> {
@@ -134,7 +134,9 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
             add(createDescriptionLabel(def, progress))
             add(Box.createVerticalStrut(8))
             if (def.progressive) {
-                add(createProgressBar(progress))
+                if (progress.nextThreshold != null) {
+                    add(createProgressBar(progress))
+                }
                 add(createCountLabel(progress))
             } else {
                 add(createStatusLabel(progress, def.steps.size))
@@ -171,15 +173,11 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         alignmentX = Component.LEFT_ALIGNMENT
     }
 
-    private fun createProgressBar(progress: AchievementProgress) = JProgressBar(0, 100).apply {
+    private fun createProgressBar(progress: AchievementProgress) = WhiteTextProgressBar(0, 100).apply {
         alignmentX = Component.LEFT_ALIGNMENT
         value = progress.percentToNext
-        isStringPainted = true
-        string = if (progress.nextThreshold == null) {
-            completedMessage
-        } else {
-            "${progress.percentToNext}%  (${progress.count} / ${progress.nextThreshold})"
-        }
+        foreground = PROGRESS_BAR_COLOR
+        string = "${progress.percentToNext}%"
     }
 
     private fun createCountLabel(progress: AchievementProgress) = JLabel(
@@ -197,7 +195,7 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         val isPartial = progress.lastStepIndex >= 0 && !isCompleted
 
         text = when {
-            isCompleted -> "✓ $completedMessage"
+            isCompleted -> completedMessage
             isPartial -> "$achievedSteps / $totalSteps $stepsCompletedMessage"
             else -> uncompletedMessage
         }
@@ -230,25 +228,12 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
 
             add(Box.createVerticalStrut(6))
 
-            add(object : JProgressBar(0, 100) {
-                init {
-                    alignmentX = LEFT_ALIGNMENT
-                    maximumSize = java.awt.Dimension(Integer.MAX_VALUE, preferredSize.height)
-                    value = percentage
-                    isStringPainted = true
-                    string = "$percentage%"
-                    foreground = JBColor(Color(51, 122, 183), Color(255, 165, 0))
-                }
-
-                override fun updateUI() {
-                    super.updateUI()
-                    // selectionForeground = text color on filled portion (always white)
-                    // selectionBackground = text color on unfilled portion (black in light, white in dark)
-                    setUI(object : BasicProgressBarUI() {
-                        override fun getSelectionForeground() = JBColor.WHITE
-                        override fun getSelectionBackground() = JBColor(Color.BLACK, Color.WHITE)
-                    })
-                }
+            add(WhiteTextProgressBar(0, 100).apply {
+                alignmentX = Component.LEFT_ALIGNMENT
+                maximumSize = Dimension(Integer.MAX_VALUE, preferredSize.height)
+                value = percentage
+                string = "$percentage%"
+                foreground = PROGRESS_BAR_COLOR
             })
 
             add(Box.createVerticalStrut(8))

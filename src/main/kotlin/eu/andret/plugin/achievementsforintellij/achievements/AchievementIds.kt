@@ -23,4 +23,7 @@ object AchievementIds {
 
     @NonNls
     const val CODE_NECROMANCER: String = "achievement.code-necromancer"
+
+    @NonNls
+    const val FILE_VOYAGER: String = "achievement.file-voyager"
 }

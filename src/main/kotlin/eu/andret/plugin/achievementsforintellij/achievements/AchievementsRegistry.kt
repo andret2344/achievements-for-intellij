@@ -90,6 +90,22 @@ object AchievementsRegistry {
                 hidden = false
             )
         )
+
+        register(
+            AchievementDefinition(
+                id = AchievementIds.FILE_VOYAGER,
+                nameKey = "achievement.file-voyager.name",
+                descriptionKey = "achievement.file-voyager.description",
+                steps = listOf(
+                    AchievementStep(5),
+                    AchievementStep(10),
+                    AchievementStep(20),
+                    AchievementStep(50),
+                    AchievementStep(100),
+                ),
+                progressive = true
+            )
+        )
     }
 
     fun register(definition: AchievementDefinition) {

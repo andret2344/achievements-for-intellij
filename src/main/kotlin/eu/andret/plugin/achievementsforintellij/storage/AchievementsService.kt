@@ -113,10 +113,7 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
         }
 
         val percent = if (nextThreshold == null) 100 else {
-            val prevThreshold = if (lastIdx >= 0) def.steps[lastIdx].threshold else 0L
-            val span = (nextThreshold - prevThreshold).coerceAtLeast(1)
-            val done = (count - prevThreshold).coerceAtLeast(0)
-            ((done.toDouble() / span.toDouble()) * 100.0).toInt().coerceIn(0, 100)
+            ((count.toDouble() / nextThreshold.toDouble()) * 100.0).toInt().coerceIn(0, 100)
         }
         return AchievementProgress(count, lastIdx, nextThreshold, percent)
     }

@@ -9,7 +9,12 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <notificationGroup id="achievements.notifications" displayType="BALLOON" isLogByDefault="true"/>
+        <notificationGroup
+                id="achievements.notifications"
+                displayType="BALLOON"
+                isLogByDefault="true"
+                bundle="messages.MyBundle"
+                key="notification.group.achievements.notifications"/>
     </extensions>
 
     <projectListeners>
@@ -21,6 +26,9 @@
                 topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
         <listener
                 class="eu.andret.plugin.achievementsforintellij.listeners.TabsOpenListener"
+                topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <listener
+                class="eu.andret.plugin.achievementsforintellij.listeners.FileVoyagerListener"
                 topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
     </projectListeners>
 
