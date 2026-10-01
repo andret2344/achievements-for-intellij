@@ -4,7 +4,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.vfs.VirtualFile
 import eu.andret.plugin.achievementsforintellij.achievements.AchievementIds
-import eu.andret.plugin.achievementsforintellij.storage.AchievementsService
+import eu.andret.plugin.achievementsforintellij.services.AchievementsService
 
 /**
  * Tracks the maximum number of concurrent open tabs.
@@ -12,12 +12,6 @@ import eu.andret.plugin.achievementsforintellij.storage.AchievementsService
 internal class TabsOpenListener : FileEditorManagerListener {
 
     override fun fileOpened(source: FileEditorManager, file: VirtualFile) {
-        val service = AchievementsService.getInstance()
-        val openTabsCount = source.openFiles.size.toLong()
-        val current = service.get(AchievementIds.OPEN_TABS_CONCURRENT)
-
-        if (openTabsCount > current) {
-            service.increment(AchievementIds.OPEN_TABS_CONCURRENT, openTabsCount - current)
-        }
+        AchievementsService.getInstance().raiseTo(AchievementIds.TAB_AVALANCHE, source.openFiles.size.toLong())
     }
 }

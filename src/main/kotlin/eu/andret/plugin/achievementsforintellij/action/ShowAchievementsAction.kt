@@ -6,16 +6,11 @@ import com.intellij.openapi.project.DumbAwareAction
 import eu.andret.plugin.achievementsforintellij.AchievementsIcons
 import eu.andret.plugin.achievementsforintellij.ui.AchievementsDialog
 
-internal class ShowAchievementsAction : DumbAwareAction(
-    "Achievements",
-    "Show achievements",
-    AchievementsIcons.PluginIcon
-) {
+// Text and description come from the bundle via plugin.xml
+internal class ShowAchievementsAction : DumbAwareAction(AchievementsIcons.PluginIcon) {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project
-        val dialog = AchievementsDialog(project)
-        dialog.show()
+        AchievementsDialog.showOrFocus(e.project)
     }
 }

@@ -1,4 +1,4 @@
-package eu.andret.plugin.achievementsforintellij.storage
+package eu.andret.plugin.achievementsforintellij.services
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
@@ -7,11 +7,13 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.messages.Topic
-import eu.andret.plugin.achievementsforintellij.MyBundle
+import eu.andret.plugin.achievementsforintellij.AchievementsBundle
 import eu.andret.plugin.achievementsforintellij.achievements.AchievementsRegistry
 import eu.andret.plugin.achievementsforintellij.achievements.entity.AchievementDefinition
+
+private val LOG = logger<AchievementsService>()
 
 @State(
     name = "achievements",
@@ -27,6 +29,7 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
     )
 
     data class State(
+        // Not persisted while equal to the default; for the first migration change the default to 0 and set the new version explicitly
         var version: Int = 1,
         var achievements: MutableMap<String, Long> = LinkedHashMap(),
         // Logs of reached steps, at most one per step index
@@ -34,11 +37,16 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
     )
 
     private var myState: State = State()
-    private val LOG: Logger = Logger.getInstance(AchievementsService::class.java)
 
-    override fun getState(): State = myState
+    // Returns a snapshot: the platform serializes it on its own thread, outside of our lock
+    override fun getState(): State = synchronized(this) {
+        myState.copy(
+            achievements = LinkedHashMap(myState.achievements),
+            logs = myState.logs.mapValuesTo(LinkedHashMap()) { (_, logs) -> logs.mapTo(mutableListOf()) { it.copy() } }
+        )
+    }
 
-    override fun loadState(state: State) {
+    override fun loadState(state: State) = synchronized(this) {
         myState = state
     }
 
@@ -49,6 +57,27 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
     fun increment(achievementId: String, delta: Long = 1): Long {
         val newValue = synchronized(this) { incrementLocked(achievementId, delta) }
         if (delta != 0L) {
+            publishChange()
+        }
+        return newValue
+    }
+
+    /**
+     * Raises the counter to [value] when it beats the current one, for "most at once" records.
+     * Compares and updates under one lock, so concurrent callers cannot double-count.
+     */
+    fun raiseTo(achievementId: String, value: Long): Long {
+        var raised = false
+        val newValue = synchronized(this) {
+            val current = myState.achievements[achievementId] ?: 0L
+            if (value > current) {
+                raised = true
+                incrementLocked(achievementId, value - current)
+            } else {
+                current
+            }
+        }
+        if (raised) {
             publishChange()
         }
         return newValue
@@ -83,27 +112,17 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
         return newValue
     }
 
-    fun get(achievementId: String): Long = myState.achievements[achievementId] ?: 0L
-
-    fun getAll(): Map<String, Long> = HashMap(myState.achievements)
-
-    fun reset(achievementId: String) {
-        synchronized(this) {
-            myState.achievements.remove(achievementId)
-            myState.logs.remove(achievementId)
-        }
-        publishChange()
-    }
+    fun get(achievementId: String): Long = synchronized(this) { myState.achievements[achievementId] ?: 0L }
 
     fun clearAll() {
         synchronized(this) {
             myState.achievements.clear()
             myState.logs.clear()
         }
+        // File Voyager keeps its own state; leaving it would re-unlock the achievement on the next file open
+        FileVoyagerService.getInstance().clear()
         publishChange()
     }
-
-    fun getDefinition(achievementId: String): AchievementDefinition? = AchievementsRegistry.get(achievementId)
 
     data class AchievementProgress(
         val count: Long,
@@ -134,16 +153,8 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
         return AchievementProgress(count, lastIdx, nextThreshold, percent)
     }
 
-    fun getLogs(achievementId: String): List<AchievementLog> = synchronized(this) {
-        ensureLogList(achievementId)
-        myState.logs[achievementId]?.toList() ?: ArrayList()
-    }
-
-    fun clearLogs(achievementId: String) {
-        synchronized(this) {
-            myState.logs.remove(achievementId)
-        }
-        publishChange()
+    fun getAllLogs(): Map<String, List<AchievementLog>> = synchronized(this) {
+        myState.logs.mapValues { (_, logs) -> logs.map { it.copy() } }
     }
 
     private fun ensureLogList(achievementId: String) {
@@ -159,8 +170,8 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
 
     private fun showNotification(def: AchievementDefinition, stepIndex: Int) {
         val group = NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATIONS_GROUP_ID)
-        val title = "🏆 Achievement Unlocked!"
-        val achievementName = MyBundle.message(def.nameKey)
+        val title = AchievementsBundle.message("notification.achievement.unlocked.title")
+        val achievementName = AchievementsBundle.message(def.nameKey)
         val description = renderDescription(def.id, stepIndex)
         val content = "<b>$achievementName</b><br/>$description"
         group.createNotification(title, content, NotificationType.INFORMATION).notify(null)
@@ -194,9 +205,9 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
         }
 
         return if (threshold != null) {
-            MyBundle.message(def.descriptionKey, threshold)
+            AchievementsBundle.message(def.descriptionKey, threshold)
         } else {
-            MyBundle.message(def.descriptionKey)
+            AchievementsBundle.message(def.descriptionKey)
         }
     }
 }

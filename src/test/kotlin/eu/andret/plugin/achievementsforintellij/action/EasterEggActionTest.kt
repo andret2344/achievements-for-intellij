@@ -5,7 +5,8 @@ import com.intellij.openapi.ui.TestDialogManager
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import eu.andret.plugin.achievementsforintellij.achievements.AchievementIds
-import eu.andret.plugin.achievementsforintellij.storage.AchievementsService
+import eu.andret.plugin.achievementsforintellij.services.AchievementsService
+import org.assertj.core.api.Assertions.assertThat
 
 class EasterEggActionTest : BasePlatformTestCase() {
 
@@ -24,16 +25,16 @@ class EasterEggActionTest : BasePlatformTestCase() {
 
     fun `test actionPerformed increments easter egg achievement`() {
         val initialCount = service.get(AchievementIds.EASTER_EGG)
-        assertEquals(0L, initialCount)
+        assertThat(initialCount).isZero()
 
         val event = TestActionEvent.createTestEvent(action)
         action.actionPerformed(event)
 
         val newCount = service.get(AchievementIds.EASTER_EGG)
-        assertEquals(1L, newCount)
+        assertThat(newCount).isEqualTo(1L)
     }
 
-    fun `test multiple clicks increment achievement`() {
+    fun `test multiple clicks unlock achievement only once`() {
         val event = TestActionEvent.createTestEvent(action)
 
         action.actionPerformed(event)
@@ -41,7 +42,7 @@ class EasterEggActionTest : BasePlatformTestCase() {
         action.actionPerformed(event)
 
         val count = service.get(AchievementIds.EASTER_EGG)
-        assertEquals(3L, count)
+        assertThat(count).isEqualTo(1L)
     }
 
     override fun tearDown() {

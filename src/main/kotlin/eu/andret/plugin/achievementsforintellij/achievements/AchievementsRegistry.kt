@@ -25,7 +25,7 @@ object AchievementsRegistry {
 
         register(
             AchievementDefinition(
-                id = AchievementIds.OPENED_LONG_FILE_1000,
+                id = AchievementIds.MILLENNIUM_FILE,
                 nameKey = "achievement.long-file.name",
                 descriptionKey = "achievement.long-file.description",
                 steps = listOf(
@@ -50,7 +50,7 @@ object AchievementsRegistry {
 
         register(
             AchievementDefinition(
-                id = AchievementIds.OPEN_TABS_CONCURRENT,
+                id = AchievementIds.TAB_AVALANCHE,
                 nameKey = "achievement.tabs-opened-bulk.name",
                 descriptionKey = "achievement.tabs-opened-bulk.description",
                 steps = listOf(
@@ -65,7 +65,7 @@ object AchievementsRegistry {
 
         register(
             AchievementDefinition(
-                id = AchievementIds.CLOSED_TABS_BULK,
+                id = AchievementIds.CLEAN_SWEEP,
                 nameKey = "achievement.tabs-closed-bulk.name",
                 descriptionKey = "achievement.tabs-closed-bulk.description",
                 steps = listOf(
@@ -86,8 +86,7 @@ object AchievementsRegistry {
                 steps = listOf(
                     AchievementStep(threshold = 1)
                 ),
-                progressive = false,
-                hidden = false
+                progressive = false
             )
         )
 
@@ -108,7 +107,7 @@ object AchievementsRegistry {
         )
     }
 
-    fun register(definition: AchievementDefinition) {
+    private fun register(definition: AchievementDefinition) {
         map[definition.id] = definition
     }
 

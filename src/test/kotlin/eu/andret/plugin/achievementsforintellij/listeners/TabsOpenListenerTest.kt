@@ -3,7 +3,8 @@ package eu.andret.plugin.achievementsforintellij.listeners
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import eu.andret.plugin.achievementsforintellij.achievements.AchievementIds
-import eu.andret.plugin.achievementsforintellij.storage.AchievementsService
+import eu.andret.plugin.achievementsforintellij.services.AchievementsService
+import org.assertj.core.api.Assertions.assertThat
 
 class TabsOpenListenerTest : BasePlatformTestCase() {
 
@@ -26,14 +27,14 @@ class TabsOpenListenerTest : BasePlatformTestCase() {
         editorManager.openFile(file1, true)
         listener.fileOpened(editorManager, file1)
 
-        val countAfterOne = service.get(AchievementIds.OPEN_TABS_CONCURRENT)
-        assertTrue(countAfterOne >= 1L)
+        val countAfterOne = service.get(AchievementIds.TAB_AVALANCHE)
+        assertThat(countAfterOne).isGreaterThanOrEqualTo(1L)
 
         editorManager.openFile(file2, true)
         listener.fileOpened(editorManager, file2)
 
-        val countAfterTwo = service.get(AchievementIds.OPEN_TABS_CONCURRENT)
-        assertTrue(countAfterTwo >= countAfterOne)
+        val countAfterTwo = service.get(AchievementIds.TAB_AVALANCHE)
+        assertThat(countAfterTwo).isGreaterThanOrEqualTo(countAfterOne)
     }
 
     fun `test achievement only increases when new max is reached`() {
@@ -42,13 +43,13 @@ class TabsOpenListenerTest : BasePlatformTestCase() {
 
         editorManager.openFile(file1, true)
         listener.fileOpened(editorManager, file1)
-        val firstCount = service.get(AchievementIds.OPEN_TABS_CONCURRENT)
+        val firstCount = service.get(AchievementIds.TAB_AVALANCHE)
 
         // Opening same file again shouldn't increase beyond actual open tabs
         listener.fileOpened(editorManager, file1)
-        val secondCount = service.get(AchievementIds.OPEN_TABS_CONCURRENT)
+        val secondCount = service.get(AchievementIds.TAB_AVALANCHE)
 
-        assertEquals(firstCount, secondCount)
+        assertThat(secondCount).isEqualTo(firstCount)
     }
 
     override fun tearDown() {

@@ -17,10 +17,23 @@ QOL improvements.
 - Fixed the UI on light-based themes.
 - Added a "SECRET" to see which achievements are and were hidden.
 - A "File Voyager" achievement for opening different file types.
+- Live updates of the achievements dialog while it is open.
+- A collapsible log of unlocked achievement steps with their dates.
 
 ### Changed
 
 - Improved the UI of the achievements' progress bars.
+- Progress bars use the IDE's native look.
+- Easter Egg, Super Easter Egg and Millennium File are unlocked once instead of counting every trigger.
+- The achievements dialog remembers its size and position, and opening it again brings the open one to the front.
+- Renamed "Millenium File" to "Millennium File".
+
+### Fixed
+
+- Resetting all progress did not reset File Voyager, which unlocked itself again on the next file open.
+- Resetting all progress removed the dialog buttons.
+- Code Necromancer read the file's VCS history on every file open, even after being unlocked.
+- Rare errors when an action closed a project or when progress was saved while being updated.
 
 ## Release 0.1.0
 
