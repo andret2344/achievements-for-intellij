@@ -12,7 +12,8 @@ import eu.andret.plugin.achievementsforintellij.services.FileVoyagerService
  */
 internal class FileVoyagerListener : FileEditorManagerListener {
     override fun fileOpened(source: FileEditorManager, file: VirtualFile) {
-        val extension = file.extension ?: "no-extension"
+        // Lowercase so that Main.JAVA and Main.java count as one file type; files without an extension do not count
+        val extension = file.extension?.lowercase()?.takeIf { it.isNotEmpty() } ?: return
         val count = FileVoyagerService.getInstance().addExtension(extension)
         AchievementsService.getInstance().raiseTo(AchievementIds.FILE_VOYAGER, count.toLong())
     }

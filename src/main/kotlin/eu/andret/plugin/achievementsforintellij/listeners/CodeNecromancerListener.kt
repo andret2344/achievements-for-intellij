@@ -43,7 +43,7 @@ internal class CodeNecromancerListener : FileEditorManagerListener {
                 val revisionDate = lastRevision.revisionDate ?: return@executeOnPooledThread
 
                 if (isOlderThanTwoYears(revisionDate.time, System.currentTimeMillis())) {
-                    AchievementsService.getInstance().increment(AchievementIds.CODE_NECROMANCER)
+                    AchievementsService.getInstance().raiseTo(AchievementIds.CODE_NECROMANCER, 1)
                 }
             } catch (e: Exception) {
                 if (e is ControlFlowException) throw e

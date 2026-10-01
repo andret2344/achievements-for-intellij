@@ -29,14 +29,14 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
     )
 
     data class State(
-        // Not persisted while equal to the default; for the first migration change the default to 0 and set the new version explicitly
-        var version: Int = 1,
+        // Files saved before versioning have no version and load as 0; fresh state starts at CURRENT_VERSION
+        var version: Int = 0,
         var achievements: MutableMap<String, Long> = LinkedHashMap(),
         // Logs of reached steps, at most one per step index
         var logs: MutableMap<String, MutableList<AchievementLog>> = LinkedHashMap()
     )
 
-    private var myState: State = State()
+    private var myState: State = State(version = CURRENT_VERSION)
 
     // Returns a snapshot: the platform serializes it on its own thread, outside of our lock
     override fun getState(): State = synchronized(this) {
@@ -48,6 +48,8 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
 
     override fun loadState(state: State) = synchronized(this) {
         myState = state
+        // Migrations from older versions go here, before stamping the current one
+        myState.version = CURRENT_VERSION
     }
 
     fun interface AchievementListener {
@@ -178,6 +180,8 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
     }
 
     companion object {
+        private const val CURRENT_VERSION = 1
+
         const val NOTIFICATIONS_GROUP_ID: String = "achievements.notifications"
 
         @JvmField

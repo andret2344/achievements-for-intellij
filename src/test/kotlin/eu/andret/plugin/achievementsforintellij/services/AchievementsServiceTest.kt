@@ -89,6 +89,12 @@ class AchievementsServiceTest : BasePlatformTestCase() {
         assertThat(logs?.map { it.stepIndex }).containsExactly(0, 1)
     }
 
+    fun `test loadState stores the current version`() {
+        service.loadState(AchievementsService.State())
+
+        assertThat(service.state.version).isEqualTo(1)
+    }
+
     override fun tearDown() {
         try {
             service.clearAll()

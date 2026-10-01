@@ -8,6 +8,12 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      # Kover reads Kotlin compiler internals, so a Kotlin bump without a matching Kover bump breaks the build
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "org.jetbrains.kotlinx.kover*"
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
