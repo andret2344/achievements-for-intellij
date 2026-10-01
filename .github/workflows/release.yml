@@ -102,9 +102,9 @@ jobs:
           # Push tag to remote
           git push origin $VERSION_TAG
 
-      # Create a pull request
+      # Create a pull request with the changelog patched above
       - name: Create Pull Request
-        if: ${{ steps.properties.outputs.changelog != '' }}
+        if: ${{ github.event.release.body != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

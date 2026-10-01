@@ -14,8 +14,7 @@ QOL improvements.
 ### Added
 
 - A general progress bar to show the progress of achievements.
-- Fixed the UI on light-based themes.
-- Added a "SECRET" to see which achievements are and were hidden.
+- A "SECRET" badge next to hidden achievements, kept after they are unlocked.
 - A "File Voyager" achievement for opening different file types; extensions are case-insensitive and files without one
   do not count.
 - Live updates of the achievements dialog while it is open.
@@ -31,6 +30,7 @@ QOL improvements.
 
 ### Fixed
 
+- The UI on light themes.
 - Code Necromancer read the file's VCS history on every file open, even after being unlocked.
 - Rare errors when an action closed a project or when progress was saved while being updated.
 
