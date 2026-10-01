@@ -1,6 +1,8 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.models.ProductRelease
 
 plugins {
     id("java") // Java support
@@ -92,7 +94,24 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            recommended()
+            val oldestBuild = providers.gradleProperty("pluginSinceBuild").get()
+            // Newest release of the oldest supported line
+            latest {
+                types = listOf(IntelliJPlatformType.IntellijIdeaUltimate)
+                channels = listOf(ProductRelease.Channel.RELEASE)
+                sinceBuild = oldestBuild
+                untilBuild = "$oldestBuild.*"
+            }
+            // Full verification (before publishing or on demand) covers every recommended IDE including EAP;
+            // the default one only checks the newest release, so pull requests stay fast
+            if (providers.gradleProperty("fullVerification").isPresent) {
+                recommended()
+            } else {
+                latest {
+                    types = listOf(IntelliJPlatformType.IntellijIdeaUltimate)
+                    channels = listOf(ProductRelease.Channel.RELEASE)
+                }
+            }
         }
     }
 }

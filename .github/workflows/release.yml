@@ -56,6 +56,18 @@ jobs:
 
           ./gradlew patchChangelog --release-note-file=$RELEASE_NOTE
 
+      # Verify against every recommended IDE including EAP before anything is published
+      - name: Run Full Plugin Verification
+        run: ./gradlew verifyPlugin -PfullVerification
+
+      # Collect Plugin Verifier Result
+      - name: Collect Plugin Verifier Result
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pluginVerifier-result
+          path: ${{ github.workspace }}/build/reports/pluginVerifier
+
       # Publish the plugin to JetBrains Marketplace
       - name: Publish Plugin
         env:
