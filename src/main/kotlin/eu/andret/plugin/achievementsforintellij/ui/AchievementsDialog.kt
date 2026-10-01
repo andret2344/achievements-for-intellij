@@ -1,5 +1,7 @@
 package eu.andret.plugin.achievementsforintellij.ui
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
@@ -29,6 +31,7 @@ import javax.swing.JSeparator
 internal class AchievementsDialog(project: Project?) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
 
     private val service = AchievementsService.getInstance()
+    private lateinit var mainPanel: JPanel
     private lateinit var scrollPane: JBScrollPane
     private val completedMessage by lazy { MyBundle.message("progress.completed") }
     private val uncompletedMessage by lazy { MyBundle.message("progress.uncompleted") }
@@ -40,6 +43,14 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         title = MyBundle.message("dialog.title")
         init()
         setSize(800, 600)
+        ApplicationManager.getApplication().messageBus.connect(disposable)
+            .subscribe(AchievementsService.TOPIC, AchievementsService.AchievementListener {
+                ApplicationManager.getApplication().invokeLater({
+                    if (!isDisposed) {
+                        refreshContent()
+                    }
+                }, ModalityState.any())
+            })
     }
 
     companion object {
@@ -59,7 +70,6 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
                     ) == Messages.YES
                 ) {
                     service.clearAll()
-                    refreshContent()
                 }
             }
         }
@@ -67,7 +77,7 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
     }
 
     override fun createCenterPanel(): JComponent {
-        val mainPanel = JPanel(BorderLayout()).apply {
+        mainPanel = JPanel(BorderLayout()).apply {
             border = JBUI.Borders.empty()
         }
 
@@ -83,17 +93,16 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         return mainPanel
     }
 
+    // Rebuilds only the center panel: contentPane is the dialog root and also holds the buttons
     private fun refreshContent() {
-        val mainPanel = JPanel(BorderLayout()).apply {
-            border = JBUI.Borders.empty()
-        }
+        val viewPosition = scrollPane.viewport.viewPosition
+        mainPanel.removeAll()
         mainPanel.add(createOverallProgressPanel(), BorderLayout.NORTH)
         scrollPane.setViewportView(createAchievementsListPanel())
+        scrollPane.viewport.viewPosition = viewPosition
         mainPanel.add(scrollPane, BorderLayout.CENTER)
-        contentPane.removeAll()
-        (contentPane as JPanel).add(mainPanel, BorderLayout.CENTER)
-        contentPane.revalidate()
-        contentPane.repaint()
+        mainPanel.revalidate()
+        mainPanel.repaint()
     }
 
     private fun createAchievementsListPanel() = JPanel().apply {

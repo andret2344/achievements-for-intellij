@@ -42,7 +42,19 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
         myState = state
     }
 
-    fun increment(achievementId: String, delta: Long = 1): Long = synchronized(this) {
+    fun interface AchievementListener {
+        fun onAchievementsChanged()
+    }
+
+    fun increment(achievementId: String, delta: Long = 1): Long {
+        val newValue = synchronized(this) { incrementLocked(achievementId, delta) }
+        if (delta != 0L) {
+            publishChange()
+        }
+        return newValue
+    }
+
+    private fun incrementLocked(achievementId: String, delta: Long): Long {
         val def: AchievementDefinition? = AchievementsRegistry.get(achievementId)
         val oldValue = myState.achievements[achievementId] ?: 0L
         val newValue = oldValue + delta
@@ -65,26 +77,30 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
                 if (myState.logs[achievementId]?.none { it.stepIndex == i } ?: true) {
                     myState.logs[achievementId]?.add(AchievementLog(i, newValue, now))
                 }
-                val event = AchievementEvent(achievementId, i, newValue, now)
-                publishEvent(event)
                 showNotification(def, i)
             }
         }
-        newValue
+        return newValue
     }
 
     fun get(achievementId: String): Long = myState.achievements[achievementId] ?: 0L
 
     fun getAll(): Map<String, Long> = HashMap(myState.achievements)
 
-    fun reset(achievementId: String) = synchronized(this) {
-        myState.achievements.remove(achievementId)
-        myState.logs.remove(achievementId)
+    fun reset(achievementId: String) {
+        synchronized(this) {
+            myState.achievements.remove(achievementId)
+            myState.logs.remove(achievementId)
+        }
+        publishChange()
     }
 
-    fun clearAll() = synchronized(this) {
-        myState.achievements.clear()
-        myState.logs.clear()
+    fun clearAll() {
+        synchronized(this) {
+            myState.achievements.clear()
+            myState.logs.clear()
+        }
+        publishChange()
     }
 
     fun getDefinition(achievementId: String): AchievementDefinition? = AchievementsRegistry.get(achievementId)
@@ -123,8 +139,11 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
         myState.logs[achievementId]?.toList() ?: ArrayList()
     }
 
-    fun clearLogs(achievementId: String) = synchronized(this) {
-        myState.logs.remove(achievementId)
+    fun clearLogs(achievementId: String) {
+        synchronized(this) {
+            myState.logs.remove(achievementId)
+        }
+        publishChange()
     }
 
     private fun ensureLogList(achievementId: String) {
@@ -133,8 +152,9 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
         }
     }
 
-    private fun publishEvent(event: AchievementEvent) {
-        ApplicationManager.getApplication().messageBus.syncPublisher(TOPIC).onStepReached(event)
+    // Must be called outside the lock: subscribers run synchronously on the caller's thread
+    private fun publishChange() {
+        ApplicationManager.getApplication().messageBus.syncPublisher(TOPIC).onAchievementsChanged()
     }
 
     private fun showNotification(def: AchievementDefinition, stepIndex: Int) {
@@ -149,20 +169,9 @@ class AchievementsService : PersistentStateComponent<AchievementsService.State> 
     companion object {
         const val NOTIFICATIONS_GROUP_ID: String = "achievements.notifications"
 
-        interface AchievementListener {
-            fun onStepReached(event: AchievementEvent)
-        }
-
-        data class AchievementEvent(
-            val id: String,
-            val stepIndex: Int,
-            val count: Long,
-            val timestamp: Long,
-        )
-
         @JvmField
         val TOPIC: Topic<AchievementListener> = Topic.create(
-            "AchievementsStepReached",
+            "AchievementsChanged",
             AchievementListener::class.java
         )
 
