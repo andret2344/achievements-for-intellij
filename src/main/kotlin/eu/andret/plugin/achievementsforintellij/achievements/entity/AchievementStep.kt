@@ -1,10 +1,8 @@
 package eu.andret.plugin.achievementsforintellij.achievements.entity
 
 /**
- * Read-only domain model for achievements and their step thresholds.
- * Names and descriptions are localized via message bundles using the provided keys.
+ * A step of an achievement, reached once the achievement's counter is at least [threshold].
  */
 data class AchievementStep(
     val threshold: Long,
-    val titleKey: String? = null,
 )

@@ -21,18 +21,23 @@ class FileVoyagerService : PersistentStateComponent<FileVoyagerService.State> {
 
     private var myState: State = State()
 
-    override fun getState(): State = myState
+    // Returns a snapshot: the platform serializes it on its own thread, outside of our lock
+    override fun getState(): State = synchronized(this) {
+        State(LinkedHashSet(myState.openedExtensions))
+    }
 
-    override fun loadState(state: State) {
+    override fun loadState(state: State) = synchronized(this) {
         myState = state
     }
 
-    fun addExtension(extension: String): Int {
+    fun addExtension(extension: String): Int = synchronized(this) {
         myState.openedExtensions.add(extension)
-        return myState.openedExtensions.size
+        myState.openedExtensions.size
     }
 
-    fun getUniqueExtensionCount(): Int = myState.openedExtensions.size
+    fun clear() = synchronized(this) {
+        myState.openedExtensions.clear()
+    }
 
     companion object {
         fun getInstance(): FileVoyagerService =

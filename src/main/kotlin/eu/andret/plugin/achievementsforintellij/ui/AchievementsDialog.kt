@@ -1,16 +1,25 @@
 package eu.andret.plugin.achievementsforintellij.ui
 
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.util.Disposer
+import com.intellij.ui.CollectionListModel
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.ActionLink
+import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.text.DateFormatUtil
 import com.intellij.util.ui.JBUI
-import eu.andret.plugin.achievementsforintellij.MyBundle
+import eu.andret.plugin.achievementsforintellij.AchievementsBundle
 import eu.andret.plugin.achievementsforintellij.achievements.AchievementsRegistry
 import eu.andret.plugin.achievementsforintellij.achievements.entity.AchievementDefinition
-import eu.andret.plugin.achievementsforintellij.storage.AchievementsService
-import eu.andret.plugin.achievementsforintellij.storage.AchievementsService.AchievementProgress
+import eu.andret.plugin.achievementsforintellij.services.AchievementsService
+import eu.andret.plugin.achievementsforintellij.services.AchievementsService.AchievementLog
+import eu.andret.plugin.achievementsforintellij.services.AchievementsService.AchievementProgress
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
@@ -24,42 +33,70 @@ import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JProgressBar
 import javax.swing.JSeparator
 
-internal class AchievementsDialog(project: Project?) : DialogWrapper(project, true, IdeModalityType.MODELESS) {
+internal class AchievementsDialog private constructor(project: Project?) :
+    DialogWrapper(project, true, IdeModalityType.MODELESS) {
 
     private val service = AchievementsService.getInstance()
+    private lateinit var mainPanel: JPanel
     private lateinit var scrollPane: JBScrollPane
-    private val completedMessage by lazy { MyBundle.message("progress.completed") }
-    private val uncompletedMessage by lazy { MyBundle.message("progress.uncompleted") }
-    private val stepsCompletedMessage by lazy { MyBundle.message("progress.steps.completed") }
-    private val hiddenNameMessage by lazy { MyBundle.message("achievements.hidden.name") }
-    private val hiddenDescMessage by lazy { MyBundle.message("achievements.hidden.description") }
+    private lateinit var logsPanel: JPanel
+    private val logsModel = CollectionListModel<String>()
+    private val completedMessage by lazy { AchievementsBundle.message("progress.completed") }
+    private val uncompletedMessage by lazy { AchievementsBundle.message("progress.uncompleted") }
+    private val stepsCompletedMessage by lazy { AchievementsBundle.message("progress.steps.completed") }
+    private val hiddenNameMessage by lazy { AchievementsBundle.message("achievements.hidden.name") }
+    private val hiddenDescMessage by lazy { AchievementsBundle.message("achievements.hidden.description") }
 
     init {
-        title = MyBundle.message("dialog.title")
+        title = AchievementsBundle.message("dialog.title")
         init()
-        setSize(800, 600)
+        ApplicationManager.getApplication().messageBus.connect(disposable)
+            .subscribe(AchievementsService.TOPIC, AchievementsService.AchievementListener {
+                ApplicationManager.getApplication().invokeLater({
+                    if (!isDisposed) {
+                        refreshContent()
+                    }
+                }, ModalityState.any())
+            })
     }
 
     companion object {
         private val COLOR_GREEN = JBColor(Color(0, 128, 0), Color(76, 175, 80))
         private val COLOR_ORANGE = JBColor(Color(204, 102, 0), Color(255, 200, 87))
         private val COLOR_RED = JBColor(Color(204, 0, 0), Color(244, 67, 54))
-        private val PROGRESS_BAR_COLOR = JBColor(Color(51, 122, 183), Color(255, 165, 0))
+
+        // Achievements are app-wide, so one dialog is enough; accessed on EDT only
+        private var openDialog: AchievementsDialog? = null
+
+        fun showOrFocus(project: Project?) {
+            openDialog?.let {
+                it.window.toFront()
+                return
+            }
+            AchievementsDialog(project).apply {
+                openDialog = this
+                Disposer.register(disposable) { openDialog = null }
+                show()
+            }
+        }
     }
 
+    // Lets the platform remember the size and position the user left the dialog with
+    override fun getDimensionServiceKey(): String = "eu.andret.plugin.achievementsforintellij.AchievementsDialog"
+
     override fun createActions(): Array<Action> {
-        val resetAction = object : AbstractAction(MyBundle.message("dialog.button.reset.caption")) {
+        val resetAction = object : AbstractAction(AchievementsBundle.message("dialog.button.reset.caption")) {
             override fun actionPerformed(e: ActionEvent) {
                 if (Messages.showYesNoDialog(
-                        MyBundle.message("dialog.modal.reset.message"),
-                        MyBundle.message("dialog.modal.reset.title"),
+                        AchievementsBundle.message("dialog.modal.reset.message"),
+                        AchievementsBundle.message("dialog.modal.reset.title"),
                         Messages.getWarningIcon()
                     ) == Messages.YES
                 ) {
                     service.clearAll()
-                    refreshContent()
                 }
             }
         }
@@ -67,8 +104,9 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
     }
 
     override fun createCenterPanel(): JComponent {
-        val mainPanel = JPanel(BorderLayout()).apply {
+        mainPanel = JPanel(BorderLayout()).apply {
             border = JBUI.Borders.empty()
+            preferredSize = JBUI.size(800, 600)
         }
 
         // Add overall progress bar at the top
@@ -80,20 +118,71 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         }
         mainPanel.add(scrollPane, BorderLayout.CENTER)
 
+        // Add collapsible logs below the list
+        logsPanel = createLogsPanel()
+        mainPanel.add(logsPanel, BorderLayout.SOUTH)
+        updateLogs()
+
         return mainPanel
     }
 
+    // Rebuilds only the center panel: contentPane is the dialog root and also holds the buttons
     private fun refreshContent() {
-        val mainPanel = JPanel(BorderLayout()).apply {
-            border = JBUI.Borders.empty()
-        }
+        val viewPosition = scrollPane.viewport.viewPosition
+        mainPanel.removeAll()
         mainPanel.add(createOverallProgressPanel(), BorderLayout.NORTH)
         scrollPane.setViewportView(createAchievementsListPanel())
+        scrollPane.viewport.viewPosition = viewPosition
         mainPanel.add(scrollPane, BorderLayout.CENTER)
-        contentPane.removeAll()
-        (contentPane as JPanel).add(mainPanel, BorderLayout.CENTER)
-        contentPane.revalidate()
-        contentPane.repaint()
+        mainPanel.add(logsPanel, BorderLayout.SOUTH)
+        updateLogs()
+        mainPanel.revalidate()
+        mainPanel.repaint()
+    }
+
+    // The expanded list takes height from the achievements list above, so the toggle moves up
+    private fun createLogsPanel(): JPanel {
+        val logsScrollPane = JBScrollPane(JBList(logsModel).apply {
+            emptyText.text = AchievementsBundle.message("logs.empty")
+        }).apply {
+            preferredSize = JBUI.size(0, 150)
+            isVisible = false
+        }
+        val toggle = ActionLink(AchievementsBundle.message("logs.show")).apply {
+            icon = AllIcons.General.ArrowRight
+        }
+        toggle.addActionListener {
+            logsScrollPane.isVisible = !logsScrollPane.isVisible
+            toggle.text = AchievementsBundle.message(if (logsScrollPane.isVisible) "logs.hide" else "logs.show")
+            toggle.icon = if (logsScrollPane.isVisible) AllIcons.General.ArrowDown else AllIcons.General.ArrowRight
+            mainPanel.revalidate()
+            mainPanel.repaint()
+        }
+
+        return JPanel(BorderLayout()).apply {
+            add(JPanel(BorderLayout()).apply {
+                border = JBUI.Borders.empty(0, 12, 4, 12)
+                add(JSeparator(), BorderLayout.NORTH)
+                add(toggle.apply { border = JBUI.Borders.emptyTop(4) }, BorderLayout.WEST)
+            }, BorderLayout.NORTH)
+            add(logsScrollPane, BorderLayout.CENTER)
+        }
+    }
+
+    private fun updateLogs() {
+        val lines = service.getAllLogs()
+            .flatMap { (id, logs) -> logs.map { id to it } }
+            .sortedWith(compareByDescending<Pair<String, AchievementLog>> { it.second.timestamp }
+                .thenByDescending { it.second.stepIndex })
+            .map { (id, log) -> formatLog(id, log) }
+        logsModel.replaceAll(lines)
+    }
+
+    private fun formatLog(achievementId: String, log: AchievementLog): String {
+        val name = AchievementsRegistry.get(achievementId)
+            ?.let { AchievementsBundle.message(it.nameKey) } ?: achievementId
+        val step = service.renderDescription(achievementId, log.stepIndex)
+        return "${DateFormatUtil.formatDateTime(log.timestamp)}   $name: $step"
     }
 
     private fun createAchievementsListPanel() = JPanel().apply {
@@ -102,15 +191,18 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         getSortedAchievements().forEach { add(createAchievementItem(it)) }
     }
 
-    private fun getSortedAchievements() = AchievementsRegistry.all().sortedWith(
-        compareBy(
-            { service.getProgress(it.id).nextThreshold == null },
-            { -service.getProgress(it.id).lastStepIndex },
-            { -service.getProgress(it.id).percentToNext },
-            { it.hidden },
-            { MyBundle.message(it.nameKey) }
+    private fun getSortedAchievements(): List<AchievementDefinition> {
+        val progress = AchievementsRegistry.all().associate { it.id to service.getProgress(it.id) }
+        return AchievementsRegistry.all().sortedWith(
+            compareBy(
+                { progress.getValue(it.id).nextThreshold == null },
+                { -progress.getValue(it.id).lastStepIndex },
+                { -progress.getValue(it.id).percentToNext },
+                { it.hidden },
+                { AchievementsBundle.message(it.nameKey) }
+            )
         )
-    )
+    }
 
     private fun createAchievementItem(def: AchievementDefinition): JPanel {
         val progress = service.getProgress(def.id)
@@ -135,7 +227,7 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
             add(Box.createVerticalStrut(8))
             if (def.progressive) {
                 if (progress.nextThreshold != null) {
-                    add(createProgressBar(progress))
+                    add(createProgressBar(progress.percentToNext))
                 }
                 add(createCountLabel(progress))
             } else {
@@ -148,7 +240,7 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         val text = if (def.hidden && progress.lastStepIndex < 0) {
             hiddenNameMessage
         } else {
-            MyBundle.message(def.nameKey)
+            AchievementsBundle.message(def.nameKey)
         }
 
         return JLabel(text).apply {
@@ -158,7 +250,7 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
     }
 
     private fun createHiddenBadge(): JLabel {
-        return JLabel("SECRET").apply {
+        return JLabel(AchievementsBundle.message("achievements.hidden.badge")).apply {
             font = font.deriveFont(Font.BOLD, font.size.toFloat() - 2)
             foreground = JBColor(Color.WHITE, Color.BLACK)
             isOpaque = true
@@ -173,11 +265,10 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
         alignmentX = Component.LEFT_ALIGNMENT
     }
 
-    private fun createProgressBar(progress: AchievementProgress) = WhiteTextProgressBar(0, 100).apply {
+    // No text inside the bar: themes do not style it, so it becomes unreadable over the unfilled part
+    private fun createProgressBar(percent: Int) = JProgressBar(0, 100).apply {
         alignmentX = Component.LEFT_ALIGNMENT
-        value = progress.percentToNext
-        foreground = PROGRESS_BAR_COLOR
-        string = "${progress.percentToNext}%"
+        value = percent
     }
 
     private fun createCountLabel(progress: AchievementProgress) = JLabel(
@@ -221,19 +312,18 @@ internal class AchievementsDialog(project: Project?) : DialogWrapper(project, tr
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
             border = JBUI.Borders.empty(12, 12, 8, 12)
 
-            add(JLabel(MyBundle.message("progress.overall.title")).apply {
+            add(JLabel(AchievementsBundle.message("progress.overall.title")).apply {
                 font = font.deriveFont(Font.BOLD, font.size.toFloat() + 2)
                 alignmentX = Component.LEFT_ALIGNMENT
             })
 
             add(Box.createVerticalStrut(6))
 
-            add(WhiteTextProgressBar(0, 100).apply {
+            add(JPanel(BorderLayout(JBUI.scale(8), 0)).apply {
                 alignmentX = Component.LEFT_ALIGNMENT
+                add(createProgressBar(percentage), BorderLayout.CENTER)
+                add(JLabel("$percentage%"), BorderLayout.EAST)
                 maximumSize = Dimension(Integer.MAX_VALUE, preferredSize.height)
-                value = percentage
-                string = "$percentage%"
-                foreground = PROGRESS_BAR_COLOR
             })
 
             add(Box.createVerticalStrut(8))

@@ -1,6 +1,7 @@
 # Achievements for IntelliJ
 
 ![Build](https://github.com/Andret2344/achievements-for-intellij/workflows/Build/badge.svg)
+[![codecov](https://codecov.io/gh/Andret2344/achievements-for-intellij/branch/main/graph/badge.svg)](https://codecov.io/gh/Andret2344/achievements-for-intellij)
 [![Version](https://img.shields.io/jetbrains/plugin/v/29357-achievements.svg)](https://plugins.jetbrains.com/plugin/29357-achievements)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/29357-achievements.svg)](https://plugins.jetbrains.com/plugin/29357-achievements)
 
@@ -9,16 +10,18 @@
 <!-- Plugin description -->
 This Achievements IntelliJ Platform Plugin adds some fun when coding.
 
-It allows one to get and check achievements for writing and running Java programs, or using your IDE's UI.
+It rewards everyday work in the IDE, like opening files and juggling tabs, with achievements you can browse under
+Tools | Achievements.
 
 Current Achievements:
 
 | Name                 | Description                                           |
 |----------------------|-------------------------------------------------------|
 | **Code Necromancer** | Open a file that hasn't been changed in over 2 years. |
-| **Millenium File**   | Open a file with 1,000 or more lines.                 |
+| **Millennium File**  | Open a file with 1,000 or more lines.                 |
 | **Tab Avalanche**    | Have 10, 25, 50 or 100 tabs opened simultaneously.    |
 | **Clean Sweep**      | Close 10, 25, 50 or 100 tabs with a single click.     |
+| **File Voyager**     | Open 5, 10, 20, 50 or 100 different file types.       |
 | **Easter Egg**       | Find the Easter Egg.                                  |
 | **Super Easter Egg** | Find the Super Easter Egg.                            |
 
@@ -36,7 +39,7 @@ Current Achievements:
   Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/29357-achievements) and install it by
   clicking the <kbd>Install to ...</kbd> button in case your IDE is running.
 
-  You can also download the [latest release](https://plugins.jetbrains.com/plugin/10294-intelliachievements/versions)
+  You can also download the [latest release](https://plugins.jetbrains.com/plugin/29357-achievements/versions)
   from JetBrains Marketplace and install it manually using
   <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
 

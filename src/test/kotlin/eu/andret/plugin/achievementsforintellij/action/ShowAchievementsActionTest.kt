@@ -2,6 +2,7 @@ package eu.andret.plugin.achievementsforintellij.action
 
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import org.assertj.core.api.Assertions.assertThatCode
 
 class ShowAchievementsActionTest : BasePlatformTestCase() {
 
@@ -15,7 +16,6 @@ class ShowAchievementsActionTest : BasePlatformTestCase() {
     fun `test actionPerformed does not throw exception`() {
         val event = TestActionEvent.createTestEvent(action)
 
-        // Should not throw
-        action.actionPerformed(event)
+        assertThatCode { action.actionPerformed(event) }.doesNotThrowAnyException()
     }
 }

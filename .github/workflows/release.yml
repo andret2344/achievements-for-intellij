@@ -20,27 +20,27 @@ jobs:
 
       # Free GitHub Actions Environment Disk Space
       - name: Maximize Build Space
-        uses: jlumbroso/free-disk-space@v1.3.1
+        uses: jlumbroso/free-disk-space@v2.0.0
         with:
-          tool-cache: false
+          preinstalled-runtimes: false
           large-packages: false
 
       # Check out the current repository
       - name: Fetch Sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.release.tag_name }}
 
       # Set up the Java environment for the next steps
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: 21
 
       # Setup Gradle
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: true
 
@@ -55,6 +55,18 @@ jobs:
           echo "$CHANGELOG" > $RELEASE_NOTE
 
           ./gradlew patchChangelog --release-note-file=$RELEASE_NOTE
+
+      # Verify against every recommended IDE including EAP before anything is published
+      - name: Run Full Plugin Verification
+        run: ./gradlew verifyPlugin -PfullVerification
+
+      # Collect Plugin Verifier Result
+      - name: Collect Plugin Verifier Result
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pluginVerifier-result
+          path: ${{ github.workspace }}/build/reports/pluginVerifier
 
       # Publish the plugin to JetBrains Marketplace
       - name: Publish Plugin
