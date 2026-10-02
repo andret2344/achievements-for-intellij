@@ -118,6 +118,15 @@ jobs:
           name: tests-result
           path: ${{ github.workspace }}/build/reports/tests
 
+      # Upload the JUnit results to CodeCov Test Analytics, also when tests fail
+      - name: Upload Test Results
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v7
+        with:
+          files: ${{ github.workspace }}/build/test-results/test/*.xml
+          report_type: test_results
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       # Upload the Kover report to CodeCov
       - name: Upload Code Coverage Report
         uses: codecov/codecov-action@v7
